@@ -135,7 +135,7 @@
             document.getElementById('previewFrame').srcdoc = rawHtml;
             document.getElementById('htmlCode').innerText = rawHtml;
             extractCommentsAndVars(rawHtml);
-            statusDiv.innerText = '✅ সাইট লোড সফল। এখন ট্যাব এক্সপ্লোর করুন।';
+            statusDiv.innerText = '✅ সাইট লোড সফল। এখন "ফায়ারবেস ডিবি" ট্যাবে গিয়ে ব্রুট ফোর্স চালান।';
         } catch (err) {
             statusDiv.innerText = '❌ লোড ব্যর্থ: ' + err.message;
         }
@@ -251,7 +251,7 @@
         resultsDiv.innerHTML = '';
         progressSpan.innerText = 'স্ক্যান শুরু হচ্ছে...';
         
-        // ইউজারের চাহিদা অনুযায়ী পাথ লিস্ট (এবং কিছু অতিরিক্ত)
+        // ইউজারের চাহিদা অনুযায়ী পাথ লিস্ট
         const pathList = ["users", "admin", "db", "data", "v1", "configs", "posts", "profiles", "secrets", "tokens", "settings", "logs"];
         let foundAny = false;
         for (let i = 0; i < pathList.length; i++) {
@@ -262,7 +262,6 @@
                 if (data !== null && (typeof data !== 'object' || Object.keys(data).length > 0)) {
                     foundAny = true;
                     resultsDiv.innerHTML += `<details class="border rounded p-2 mb-2 bg-gray-900/50"><summary class="cursor-pointer text-green-400 font-bold">✅ পাওয়া গেছে: ${p}</summary><pre class="json-tree text-xs mt-2">${JSON.stringify(data, null, 2)}</pre></details>`;
-                    // সর্বশেষ ডাটা এক্সপোর্টের জন্য সংরক্ষণ
                     if (!currentDbData) currentDbData = {};
                     currentDbData[p] = data;
                 } else {
@@ -271,7 +270,6 @@
             } catch (err) {
                 resultsDiv.innerHTML += `<div class="text-red-400 text-sm">⚠️ ${p} : ${err.message}</div>`;
             }
-            // একটু delay যাতে রেট লিমিট না লাগে
             await new Promise(r => setTimeout(r, 300));
         }
         progressSpan.innerText = foundAny ? '✅ ব্রুট ফোর্স স্ক্যান সম্পূর্ণ। ডাটা পাওয়া গেছে।' : '⚠️ স্ক্যান শেষ, কোনো পাবলিক ডাটা পাওয়া যায়নি।';
@@ -390,7 +388,15 @@
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
     });
-    switchTab('preview');
+
+    // ---------- ডিফল্ট সাইট লোড (আপনার নির্দেশনা অনুযায়ী) ----------
+    window.onload = () => {
+        const defaultUrl = 'https://jaya9bangladesh.com';
+        document.getElementById('urlInput').value = defaultUrl;
+        loadSite(defaultUrl);
+        // প্রয়োজনে ডিফল্ট ট্যাব "ফায়ারবেস ডিবি" দেখাতে চাইলে:
+        // switchTab('database');
+    };
 </script>
 </body>
 </html>
