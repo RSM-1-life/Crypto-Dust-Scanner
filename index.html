@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Firebase DB Inspector + Hidden Scanner</title>
+    <title>Universal Site Data Viewer - No Popup, Stable Proxy</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         .json-tree { font-family: 'Courier New', monospace; font-size: 12px; background: #1e1e2f; color: #f8f8f2; padding: 1rem; border-radius: 0.75rem; overflow-x: auto; white-space: pre-wrap; }
-        .token-badge { background: #2d3748; padding: 4px 10px; border-radius: 20px; font-family: monospace; font-size: 12px; }
+        .tab-btn.active { background-color: #3b82f6; color: white; }
+        .tab-btn:not(.active):hover { background-color: #e5e7eb; }
         .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -16,114 +17,142 @@
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
 <div class="container mx-auto p-4 max-w-7xl">
-    <h1 class="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-        <i class="fas fa-database mr-2"></i> Firebase DB Inspector
-    </h1>
-    <p class="text-center text-sm text-gray-500 mb-4">গবেষণা ও নিজের ওয়েবসাইটের নিরাপত্তা পরীক্ষার জন্য | শুধু পাবলিক তথ্য</p>
+    <div class="text-center mb-6">
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <i class="fas fa-globe mr-2"></i> Universal Site Data Viewer
+        </h1>
+        <p class="text-sm text-gray-500">শিক্ষা ও গবেষণার জন্য | আপনার নিজের ওয়েবসাইটের তথ্য বিশ্লেষণ করুন</p>
+    </div>
 
     <!-- URL Input -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 mb-6">
         <div class="flex flex-col md:flex-row gap-3">
             <input type="text" id="urlInput" placeholder="https://yourwebsite.com" class="flex-1 px-4 py-3 rounded-xl border dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
-            <button id="goBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"><i class="fas fa-search"></i> Load Site</button>
+            <button id="goBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition flex items-center justify-center gap-2">
+                <i class="fas fa-search"></i> Load Site
+            </button>
         </div>
-        <div id="statusMsg" class="mt-2 text-sm text-orange-600"></div>
+        <div id="statusMsg" class="mt-2 text-sm text-orange-600 dark:text-orange-400"></div>
     </div>
 
-    <!-- Tabs -->
-    <div class="flex flex-wrap gap-2 border-b mb-4 overflow-x-auto">
-        <button data-tab="config" class="tab-btn px-4 py-2 rounded-t-lg bg-blue-600 text-white"><i class="fas fa-cog"></i> Config & Tokens</button>
-        <button data-tab="database" class="tab-btn px-4 py-2 rounded-t-lg"><i class="fas fa-database"></i> Firebase DB</button>
-        <button data-tab="hidden" class="tab-btn px-4 py-2 rounded-t-lg"><i class="fas fa-eye-slash"></i> Hidden Scan</button>
-        <button data-tab="xss" class="tab-btn px-4 py-2 rounded-t-lg"><i class="fas fa-bug"></i> XSS Test</button>
+    <!-- Tab Navigation -->
+    <div class="flex flex-wrap gap-2 border-b border-gray-300 dark:border-gray-700 mb-4 overflow-x-auto pb-1">
+        <button data-tab="preview" class="tab-btn px-4 py-2 rounded-t-lg font-medium"><i class="fas fa-eye mr-1"></i> Preview</button>
+        <button data-tab="html" class="tab-btn px-4 py-2 rounded-t-lg"><i class="fas fa-code mr-1"></i> HTML</button>
+        <button data-tab="config" class="tab-btn px-4 py-2 rounded-t-lg"><i class="fas fa-cog mr-1"></i> Config & Tokens</button>
+        <button data-tab="database" class="tab-btn px-4 py-2 rounded-t-lg"><i class="fas fa-database mr-1"></i> Firebase DB</button>
+        <button data-tab="hidden" class="tab-btn px-4 py-2 rounded-t-lg"><i class="fas fa-eye-slash mr-1"></i> Hidden Scan</button>
+        <button data-tab="xss" class="tab-btn px-4 py-2 rounded-t-lg"><i class="fas fa-bug mr-1"></i> XSS Test</button>
     </div>
 
+    <!-- Tab Contents -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 min-h-[600px]">
+        <!-- Preview Tab -->
+        <div id="preview" class="tab-pane">
+            <h2 class="text-xl font-semibold mb-3">Live Preview (via proxy)</h2>
+            <iframe id="previewFrame" class="w-full h-[550px] rounded-xl border border-gray-300 dark:border-gray-600" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+        </div>
+
+        <!-- HTML Tab -->
+        <div id="html" class="tab-pane hidden">
+            <h2 class="text-xl font-semibold mb-3">Raw HTML Source</h2>
+            <pre id="htmlCode" class="bg-gray-900 text-green-300 p-4 rounded-lg overflow-auto max-h-[550px] text-sm font-mono"></pre>
+        </div>
+
         <!-- Config & Tokens Tab -->
-        <div id="config" class="tab-pane">
-            <h2 class="text-xl font-semibold mb-3">🔑 Extracted Firebase Config & Auth Tokens</h2>
+        <div id="config" class="tab-pane hidden">
+            <h2 class="text-xl font-semibold mb-3">Firebase Config & Extracted Tokens</h2>
             <div id="firebaseConfigDisplay" class="mb-4 p-3 bg-gray-100 dark:bg-gray-900 rounded-lg"></div>
             <div id="tokensList" class="p-3 bg-gray-100 dark:bg-gray-900 rounded-lg">
-                <div class="font-bold mb-2">🍪 Authorization Tokens / Session IDs (from page source)</div>
+                <div class="font-bold mb-2">🔑 Auth Tokens / Session IDs</div>
                 <div id="foundTokens" class="space-y-2"></div>
             </div>
-            <div class="mt-4 text-sm text-gray-500">※ টোকেন ব্যবহার করতে নিচের Firebase DB ট্যাবে "Use Auth Token" চেক করুন।</div>
         </div>
 
-        <!-- Firebase DB Tab (Enhanced) -->
+        <!-- Firebase DB Tab -->
         <div id="database" class="tab-pane hidden">
             <div class="flex flex-wrap gap-3 mb-4 items-center">
-                <input type="text" id="customPath" placeholder="কাস্টম পাথ (যেমন: users, posts/123)" class="flex-1 px-3 py-2 rounded-lg border dark:bg-gray-700">
+                <input type="text" id="customPath" placeholder="কাস্টম পাথ (users, posts/123)" class="flex-1 px-3 py-2 rounded-lg border dark:bg-gray-700">
                 <button id="fetchPathBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-arrow-right"></i> Fetch</button>
                 <button id="scanWordlistBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-list"></i> Wordlist Scan</button>
                 <button id="exportDbBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-download"></i> Export JSON/CSV</button>
             </div>
             <div class="flex items-center gap-3 mb-4 bg-gray-100 dark:bg-gray-900 p-3 rounded-lg">
                 <input type="checkbox" id="useAuthCheckbox" class="w-5 h-5">
-                <label for="useAuthCheckbox" class="font-medium">Use Auth Token (append ?auth=... )</label>
+                <label for="useAuthCheckbox" class="font-medium">Use Auth Token (append ?auth=...)</label>
                 <select id="authTokenSelect" class="ml-2 px-2 py-1 rounded border dark:bg-gray-800 text-sm" disabled>
-                    <option value="">No token selected</option>
+                    <option value="">No token</option>
                 </select>
             </div>
-            <div id="dbContent" class="json-tree max-h-[500px] overflow-auto mb-4"></div>
+            <div id="dbContent" class="json-tree max-h-[450px] overflow-auto mb-4"></div>
             <div id="scanProgress" class="text-sm text-gray-400"></div>
             <div id="wordlistResults" class="mt-4 space-y-2 max-h-[300px] overflow-y-auto"></div>
         </div>
 
-        <!-- Hidden Scan Tab (same as before) -->
+        <!-- Hidden Scan Tab -->
         <div id="hidden" class="tab-pane hidden">
-            <button id="startHiddenScan" class="bg-purple-600 text-white px-4 py-2 rounded-lg"><i class="fas fa-play"></i> Start Hidden Path Scan</button>
+            <button id="startHiddenScan" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-play"></i> Start Hidden Path Scan</button>
             <div id="hiddenProgress" class="mt-2 text-sm"></div>
-            <div id="hiddenResults" class="mt-4 max-h-[500px] overflow-y-auto"></div>
-            <div class="mt-6"><h3 class="font-semibold">💬 HTML Comments & Exposed Vars</h3><div id="commentsListHidden"></div></div>
+            <div id="hiddenResults" class="mt-4 max-h-[500px] overflow-y-auto text-sm"></div>
+            <div class="mt-6"><h3 class="font-semibold">💬 HTML Comments & Exposed Vars</h3><div id="commentsListHidden" class="mt-2 space-y-2"></div></div>
         </div>
 
-        <!-- XSS Tab (same) -->
+        <!-- XSS Test Tab -->
         <div id="xss" class="tab-pane hidden">
-            <button id="runXssScan" class="bg-red-600 text-white px-4 py-2 rounded-lg">Run XSS Scan</button>
+            <button id="runXssScan" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"><i class="fas fa-bug"></i> Run XSS Scan</button>
             <div id="xssResult" class="mt-4"></div>
         </div>
     </div>
 </div>
 
 <script>
-    // ---------- GLOBALS ----------
-    let currentSiteUrl = '';
+    // ---------- STABLE PROXY (NO POPUPS) ----------
+    const PROXY = 'https://api.allorigins.win/get?url=';
+
+    // Global state
+    let currentUrl = '';
     let rawHtml = '';
-    let firebaseConfig = null;        // { apiKey, projectId, ... }
-    let extractedTokens = [];          // array of { token, source }
-    let currentDbData = null;          // last fetched data (full or path)
-    let accumulatedScanData = {};      // for wordlist scan results
+    let firebaseConfig = null;
+    let extractedTokens = [];
+    let currentDbData = null;
+    let accumulatedScanData = {};
 
-    const CORS_PROXY = 'https://corsproxy.io/?url=';
-
-    // Helper: proxy fetch
-    async function proxyFetch(url, options = {}) {
-        const proxyUrl = CORS_PROXY + encodeURIComponent(url);
-        const res = await fetch(proxyUrl, options);
-        return res;
+    // Helper: fetch HTML via proxy (returns content only)
+    async function fetchHtml(url) {
+        const proxyUrl = PROXY + encodeURIComponent(url);
+        const resp = await fetch(proxyUrl);
+        const json = await resp.json();
+        if (!resp.ok || json.status?.http_code !== 200) throw new Error('Failed to load site');
+        return json.contents;
     }
 
-    // ---------- Load Site & Extract Config/Tokens ----------
+    // Main Load
     async function loadSite(url) {
         const statusDiv = document.getElementById('statusMsg');
-        statusDiv.innerText = 'Loading website...';
+        statusDiv.innerText = 'Loading website... (proxy may take a few seconds)';
         try {
-            const proxyUrl = CORS_PROXY + encodeURIComponent(url);
-            const response = await fetch(proxyUrl);
-            rawHtml = await response.text();
-            currentSiteUrl = url;
-
-            // Extract Firebase config
-            extractFirebaseConfig(rawHtml);
-            // Extract tokens
-            extractTokensFromHtml(rawHtml);
+            rawHtml = await fetchHtml(url);
+            currentUrl = url;
             
-            // Display config & tokens
+            // Extract config & tokens
+            extractFirebaseConfig(rawHtml);
+            extractTokensFromHtml(rawHtml);
             displayConfigAndTokens();
-            statusDiv.innerText = '✅ Site loaded. Go to Firebase DB tab.';
+            
+            // Show preview in iframe (using same proxy, but iframe may show popups? we use sandbox)
+            const iframe = document.getElementById('previewFrame');
+            iframe.srcdoc = rawHtml;  // langsung srcdoc, no popup from external site
+            
+            // Update HTML tab
+            document.getElementById('htmlCode').innerText = rawHtml;
+            
+            // extract comments for hidden tab
+            extractCommentsAndVars(rawHtml);
+            
+            statusDiv.innerText = '✅ Site loaded successfully. Now explore tabs.';
         } catch (err) {
-            statusDiv.innerText = '❌ Error: ' + err.message;
+            console.error(err);
+            statusDiv.innerText = '❌ Error loading site: ' + err.message;
         }
     }
 
@@ -135,98 +164,99 @@
             const apiKeyMatch = /apiKey:\s*["']([^"']+)["']/.exec(configStr);
             const projectIdMatch = /projectId:\s*["']([^"']+)["']/.exec(configStr);
             if (apiKeyMatch && projectIdMatch) {
-                firebaseConfig = {
-                    apiKey: apiKeyMatch[1],
-                    projectId: projectIdMatch[1]
-                };
+                firebaseConfig = { apiKey: apiKeyMatch[1], projectId: projectIdMatch[1] };
             } else if (projectIdMatch) {
                 firebaseConfig = { projectId: projectIdMatch[1] };
             }
-        } else {
-            // try to find projectId via regex
-            const projectIdRegex = /projectId:\s*["']([^"']+)["']/i;
-            const pidMatch = projectIdRegex.exec(html);
+        }
+        if (!firebaseConfig) {
+            const pidMatch = /projectId:\s*["']([^"']+)["']/i.exec(html);
             if (pidMatch) firebaseConfig = { projectId: pidMatch[1] };
         }
     }
 
     function extractTokensFromHtml(html) {
         extractedTokens = [];
-        // patterns: "auth":"...", "idToken":"...", "Authorization: Bearer ...", "session": "..."
         const patterns = [
-            /["']auth["']\s*:\s*["']([^"']{20,})["']/gi,
-            /["']idToken["']\s*:\s*["']([^"']{20,})["']/gi,
-            /["']token["']\s*:\s*["']([^"']{20,})["']/gi,
+            /["']auth["']\s*:\s*["']([^"']{15,})["']/gi,
+            /["']idToken["']\s*:\s*["']([^"']{15,})["']/gi,
+            /["']token["']\s*:\s*["']([^"']{15,})["']/gi,
             /Authorization:\s*Bearer\s+([a-zA-Z0-9_\-\.]+)/gi,
-            /["']session["']\s*:\s*["']([^"']{10,})["']/gi,
-            /firebase:authUser:([^"'\s]+)/gi
+            /["']session["']\s*:\s*["']([^"']{10,})["']/gi
         ];
         patterns.forEach(pattern => {
             let match;
             while ((match = pattern.exec(html)) !== null) {
                 let token = match[1];
-                if (token && token.length > 8 && !extractedTokens.find(t => t.token === token)) {
-                    extractedTokens.push({ token: token, source: pattern.toString().slice(0,50) });
+                if (token && token.length > 8 && !extractedTokens.find(t=>t.token===token)) {
+                    extractedTokens.push({ token, source: pattern.source.slice(0,40) });
                 }
             }
         });
-        // unique
-        extractedTokens = extractedTokens.filter((v,i,a)=>a.findIndex(t=>t.token===v.token)===i);
     }
 
     function displayConfigAndTokens() {
         const configDiv = document.getElementById('firebaseConfigDisplay');
         if (firebaseConfig) {
-            configDiv.innerHTML = `<div class="font-bold">Firebase Project</div><pre>${JSON.stringify(firebaseConfig, null, 2)}</pre>`;
+            configDiv.innerHTML = `<div class="font-bold">Firebase Project</div><pre class="text-sm">${JSON.stringify(firebaseConfig, null, 2)}</pre>`;
         } else {
-            configDiv.innerHTML = '<div class="text-gray-500">No Firebase config found in page source.</div>';
+            configDiv.innerHTML = '<div class="text-gray-500">No Firebase config found.</div>';
         }
 
         const tokensDiv = document.getElementById('foundTokens');
         if (extractedTokens.length === 0) {
-            tokensDiv.innerHTML = '<div class="text-gray-500">No auth tokens or session IDs detected.</div>';
+            tokensDiv.innerHTML = '<div class="text-gray-500">No auth tokens detected.</div>';
         } else {
             tokensDiv.innerHTML = extractedTokens.map(t => `
-                <div class="token-badge flex justify-between items-center">
-                    <span class="font-mono text-xs break-all">${t.token.substring(0, 40)}...</span>
-                    <span class="text-gray-400 text-xs">${t.source}</span>
-                </div>
+                <div class="bg-gray-700 p-2 rounded text-xs font-mono break-all">${t.token.substring(0, 50)}... <span class="text-gray-400">(${t.source})</span></div>
             `).join('');
         }
-        // populate auth token dropdown in DB tab
+        // populate token select
         const select = document.getElementById('authTokenSelect');
         select.innerHTML = '<option value="">None</option>';
         extractedTokens.forEach(t => {
-            select.innerHTML += `<option value="${escapeHtml(t.token)}">${t.token.substring(0, 30)}...</option>`;
+            select.innerHTML += `<option value="${escapeHtml(t.token)}">${t.token.substring(0,30)}...</option>`;
         });
-        const checkbox = document.getElementById('useAuthCheckbox');
-        checkbox.addEventListener('change', () => {
-            select.disabled = !checkbox.checked;
-        });
+        const chk = document.getElementById('useAuthCheckbox');
+        chk.onchange = () => { select.disabled = !chk.checked; };
         select.disabled = true;
     }
 
-    // ---------- Firebase DB Helpers ----------
-    function getFirebaseBaseUrl() {
+    function extractCommentsAndVars(html) {
+        const commentRegex = /<!--(.*?)-->/gs;
+        let comments = [];
+        let match;
+        while ((match = commentRegex.exec(html)) !== null) {
+            let content = match[1].trim();
+            if (content.length) comments.push(content.slice(0,300));
+        }
+        const commentsDiv = document.getElementById('commentsListHidden');
+        if (comments.length) {
+            commentsDiv.innerHTML = comments.map(c => `<div class="bg-gray-800 p-2 rounded text-sm"><i class="fas fa-comment"></i> ${escapeHtml(c)}</div>`).join('');
+        } else {
+            commentsDiv.innerHTML = '<div class="text-gray-500">No HTML comments found.</div>';
+        }
+    }
+
+    // Firebase DB Helpers
+    function getFirebaseBase() {
         if (!firebaseConfig || !firebaseConfig.projectId) return null;
         return `https://${firebaseConfig.projectId}.firebaseio.com`;
     }
 
     async function fetchFirebaseNode(path, useAuth, token) {
-        let base = getFirebaseBaseUrl();
-        if (!base) throw new Error('No Firebase projectId found. Load a website with Firebase config first.');
+        const base = getFirebaseBase();
+        if (!base) throw new Error('No Firebase projectId found.');
         let url = `${base}/${path}.json`;
-        if (useAuth && token) {
-            url += `?auth=${encodeURIComponent(token)}`;
-        }
-        const proxyUrl = CORS_PROXY + encodeURIComponent(url);
-        const res = await fetch(proxyUrl);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        if (useAuth && token) url += `?auth=${encodeURIComponent(token)}`;
+        const proxyUrl = PROXY + encodeURIComponent(url);
+        const resp = await fetch(proxyUrl);
+        const json = await resp.json();
+        if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
+        const data = JSON.parse(json.contents);
         return data;
     }
 
-    // Fetch single path and display
     async function fetchAndDisplayPath(path) {
         const useAuth = document.getElementById('useAuthCheckbox').checked;
         const token = useAuth ? document.getElementById('authTokenSelect').value : null;
@@ -235,71 +265,57 @@
         try {
             const data = await fetchFirebaseNode(path, useAuth, token);
             currentDbData = data;
-            dbDiv.innerHTML = `<div class="mb-2 text-green-400">✅ Path "${path}"</div><pre class="json-tree">${JSON.stringify(data, null, 2)}</pre>`;
+            dbDiv.innerHTML = `<div class="text-green-400 mb-2">✅ Path: ${path}</div><pre class="json-tree">${JSON.stringify(data, null, 2)}</pre>`;
         } catch (err) {
             dbDiv.innerHTML = `<div class="text-red-500">Error: ${err.message}</div>`;
         }
     }
 
-    // Wordlist scan (common paths)
     async function scanWordlist() {
-        const wordlist = [
-            "users", "admin", "settings", "posts", "profiles", "logs", "comments",
-            "messages", "secrets", "config", "backup", "tokens", "sessions", "auth",
-            "firebase", "data", "private", "temp", "uploads", "files", "db", "meta",
-            "info", "status", "health", "version", "api", "v1", "v2", "dev", "test"
-        ];
+        const wordlist = ["users","admin","settings","posts","profiles","logs","comments","messages","secrets","config","backup","tokens","sessions","auth","private","temp","uploads","db","meta"];
         const useAuth = document.getElementById('useAuthCheckbox').checked;
         const token = useAuth ? document.getElementById('authTokenSelect').value : null;
         const resultsDiv = document.getElementById('wordlistResults');
         const progressSpan = document.getElementById('scanProgress');
         resultsDiv.innerHTML = '';
         accumulatedScanData = {};
-        let index = 0;
-        for (const p of wordlist) {
-            progressSpan.innerText = `Scanning ${index+1}/${wordlist.length}: ${p}`;
+        for (let i=0; i<wordlist.length; i++) {
+            const p = wordlist[i];
+            progressSpan.innerText = `Scanning ${i+1}/${wordlist.length}: ${p}`;
             try {
                 const data = await fetchFirebaseNode(p, useAuth, token);
-                if (data !== null && data !== undefined && (typeof data !== 'object' || Object.keys(data).length > 0)) {
+                if (data !== null && (typeof data !== 'object' || Object.keys(data).length > 0)) {
                     accumulatedScanData[p] = data;
-                    resultsDiv.innerHTML += `<details class="border rounded p-2 mb-1"><summary class="cursor-pointer font-mono text-green-400">✅ ${p} (${JSON.stringify(data).substring(0,80)})</summary><pre class="json-tree text-xs mt-1">${JSON.stringify(data, null, 2)}</pre></details>`;
+                    resultsDiv.innerHTML += `<details class="border rounded p-2 mb-1"><summary class="cursor-pointer text-green-400">✅ ${p}</summary><pre class="json-tree text-xs">${JSON.stringify(data, null, 2)}</pre></details>`;
                 } else {
-                    resultsDiv.innerHTML += `<div class="text-gray-500 text-sm">❌ ${p} : null or empty</div>`;
+                    resultsDiv.innerHTML += `<div class="text-gray-500 text-sm">❌ ${p} : empty/null</div>`;
                 }
-            } catch (err) {
-                resultsDiv.innerHTML += `<div class="text-red-400 text-sm">⚠️ ${p} : ${err.message}</div>`;
+            } catch(e) {
+                resultsDiv.innerHTML += `<div class="text-red-400 text-sm">⚠️ ${p} : ${e.message}</div>`;
             }
-            index++;
         }
-        progressSpan.innerText = 'Scan completed.';
+        progressSpan.innerText = 'Wordlist scan completed.';
         currentDbData = accumulatedScanData;
     }
 
-    // Export current data (JSON or CSV)
-    function exportData(format) {
-        if (!currentDbData) {
-            alert('No data to export. Fetch a path or run wordlist scan first.');
-            return;
-        }
+    function exportData() {
+        if (!currentDbData) { alert('No data to export'); return; }
+        const format = confirm('OK for JSON, Cancel for CSV') ? 'json' : 'csv';
         let content, filename;
         if (format === 'json') {
             content = JSON.stringify(currentDbData, null, 2);
             filename = 'firebase_export.json';
-        } else if (format === 'csv') {
-            // flatten first level
+        } else {
             let rows = [];
-            if (typeof currentDbData === 'object' && currentDbData !== null) {
-                for (let key in currentDbData) {
-                    let val = currentDbData[key];
-                    if (typeof val === 'object') val = JSON.stringify(val);
-                    rows.push({ key, value: val });
+            if (typeof currentDbData === 'object') {
+                for (let k in currentDbData) {
+                    let v = currentDbData[k];
+                    if (typeof v === 'object') v = JSON.stringify(v);
+                    rows.push([k, v]);
                 }
-            } else {
-                rows.push({ key: 'data', value: JSON.stringify(currentDbData) });
-            }
-            const csvRows = [['Key','Value']];
-            rows.forEach(r => csvRows.push([r.key, r.value]));
-            content = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+            } else { rows.push(['data', JSON.stringify(currentDbData)]); }
+            const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+            content = 'Key,Value\n' + csv;
             filename = 'firebase_export.csv';
         }
         const blob = new Blob([content], {type: 'text/plain'});
@@ -310,60 +326,77 @@
         URL.revokeObjectURL(a.href);
     }
 
-    // ---------- Hidden Path Scan (from previous) ----------
+    // Hidden paths scan (with proxy)
     async function scanHiddenPaths(baseUrl) {
-        const paths = [".git/HEAD", ".env", "backup.zip", "admin", "config.json", "phpinfo.php", "robots.txt", "api/swagger.json"];
+        const paths = [".git/HEAD", ".env", "backup.zip", "admin", "config.json", "phpinfo.php", "robots.txt", "api/swagger.json", "wp-config.php"];
         const resultsDiv = document.getElementById('hiddenResults');
         const progressSpan = document.getElementById('hiddenProgress');
         resultsDiv.innerHTML = '';
         for (let p of paths) {
             progressSpan.innerText = `Checking ${p}`;
             const testUrl = baseUrl.endsWith('/') ? baseUrl + p : baseUrl + '/' + p;
-            const proxyTest = CORS_PROXY + encodeURIComponent(testUrl);
+            const proxyUrl = PROXY + encodeURIComponent(testUrl);
             try {
-                const res = await fetch(proxyTest, { method: 'HEAD' });
-                const status = res.status;
-                const color = status === 200 ? 'text-red-500' : 'text-gray-400';
-                resultsDiv.innerHTML += `<div class="${color}">${p} -> HTTP ${status}</div>`;
+                const resp = await fetch(proxyUrl);
+                const json = await resp.json();
+                const status = json.status?.http_code || 0;
+                const accessible = (status === 200);
+                resultsDiv.innerHTML += `<div class="${accessible ? 'text-red-500' : 'text-gray-400'}">${p} → HTTP ${status} ${accessible ? '(ACCESSIBLE)' : ''}</div>`;
             } catch(e) {
-                resultsDiv.innerHTML += `<div class="text-gray-500">${p} -> error</div>`;
+                resultsDiv.innerHTML += `<div class="text-gray-500">${p} → error</div>`;
             }
         }
-        progressSpan.innerText = 'Done.';
+        progressSpan.innerText = 'Hidden scan completed.';
     }
 
-    // XSS scan (same as before)
+    // XSS Scan
     async function runXssScan(url) {
-        const payloads = ['<script>alert(1)</script>', '<img src=x onerror=alert(1)>'];
+        const payloads = ['<script>alert(1)</script>', '<img src=x onerror=alert(1)>', '"><script>alert(1)</script>'];
         const resultDiv = document.getElementById('xssResult');
-        resultDiv.innerHTML = '<div class="loading-spinner"></div>';
+        resultDiv.innerHTML = '<div class="loading-spinner"></div><div>Scanning...</div>';
         let vulns = [];
         for (let payload of payloads) {
             const testUrl = url + (url.includes('?') ? '&q=' : '?q=') + encodeURIComponent(payload);
-            const res = await fetch(CORS_PROXY + encodeURIComponent(testUrl));
-            const text = await res.text();
-            if (text.includes(payload)) vulns.push(payload);
+            const proxyUrl = PROXY + encodeURIComponent(testUrl);
+            try {
+                const resp = await fetch(proxyUrl);
+                const json = await resp.json();
+                if (json.contents && json.contents.includes(payload)) vulns.push(payload);
+            } catch(e) {}
         }
-        if (vulns.length) resultDiv.innerHTML = `<div class="text-red-500">⚠️ Potential XSS reflected: ${vulns.join(', ')}</div>`;
-        else resultDiv.innerHTML = '<div class="text-green-500">No basic XSS detected.</div>';
+        if (vulns.length) {
+            resultDiv.innerHTML = `<div class="bg-red-900/30 p-3 rounded border border-red-500"><i class="fas fa-exclamation-triangle"></i> Potential XSS: ${vulns.join(', ')}</div>`;
+        } else {
+            resultDiv.innerHTML = '<div class="text-green-500">No reflected XSS detected.</div>';
+        }
     }
 
-    // UI Helpers
-    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    // UI helpers
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m){
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Tab switching
     function switchTab(tabId) {
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
         document.getElementById(tabId).classList.remove('hidden');
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.remove('active', 'bg-blue-600', 'text-white');
             btn.classList.add('hover:bg-gray-200');
         });
-        const active = document.querySelector(`[data-tab="${tabId}"]`);
-        active.classList.add('bg-blue-600', 'text-white');
+        const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
+        activeBtn.classList.add('active', 'bg-blue-600', 'text-white');
     }
 
-    // Event Listeners
+    // Event listeners
     document.getElementById('goBtn').addEventListener('click', () => {
         let url = document.getElementById('urlInput').value.trim();
+        if (!url) return;
         if (!url.startsWith('http')) url = 'https://' + url;
         loadSite(url);
     });
@@ -373,24 +406,21 @@
         fetchAndDisplayPath(path);
     });
     document.getElementById('scanWordlistBtn').addEventListener('click', scanWordlist);
-    document.getElementById('exportDbBtn').addEventListener('click', () => {
-        const fmt = confirm('Export as JSON? Click OK for JSON, Cancel for CSV') ? 'json' : 'csv';
-        exportData(fmt);
-    });
+    document.getElementById('exportDbBtn').addEventListener('click', exportData);
     document.getElementById('startHiddenScan').addEventListener('click', () => {
-        if (!currentSiteUrl) { alert('Load a website first'); return; }
-        scanHiddenPaths(currentSiteUrl);
+        if (!currentUrl) { alert('Load a site first'); return; }
+        scanHiddenPaths(currentUrl);
     });
     document.getElementById('runXssScan').addEventListener('click', () => {
-        if (!currentSiteUrl) return;
-        runXssScan(currentSiteUrl);
+        if (!currentUrl) { alert('Load a site first'); return; }
+        runXssScan(currentUrl);
     });
-    // attach tab switching
+    // tab listeners
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
     });
-    // default view
-    switchTab('config');
+    // default tab
+    switchTab('preview');
 </script>
 </body>
 </html>
